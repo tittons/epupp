@@ -110,7 +110,7 @@ class EpuPP(object):
         Extracts content of all files from epub into a single string and returns it.
         
         Returns:
-            chapters (str): String containing text of the book formatted as html.
+            chapters (str): String containing the text of the book formatted as html.
         Raises:
             KeyError: if a file is not found in the epub archive.
         """
@@ -131,6 +131,33 @@ class EpuPP(object):
                     handle_error(e)
         print()
         chapters = html.tostring(chapters,encoding='unicode')
+        return chapters
+        
+    def get_chapters_list(self):
+        """
+        Extracts content of all files from epub into a list of strings (a string for a file) and returns it.
+        
+        Returns:
+            chapters (list[str]): List of strings containing the text of the book formatted as html.
+        Raises:
+            KeyError: if a file is not found in the epub archive.
+        """
+        if not self.ifile: return
+        files = self.__get_files()
+        chapters = []
+        
+        for i,filename in enumerate(files):
+            if "htm" in filename or "xml" in filename:
+                original = find_file(self.ifile,filename)
+                try:
+                    with self.ifile.open(original) as f:
+                        chapter = build_chapter(f)
+                        chapter.attrib["data-cid"]=str(i)
+                        chapters.append(html.tostring(chapter,encoding='unicode'))
+                        print("%s."%i,end="")
+                except KeyError as e:
+                    handle_error(e)
+        print()
         return chapters
 
     def write_to_file(self,res, optional_filename=""):
@@ -274,3 +301,4 @@ if __name__ == "__main__":
         print(res.write_to_file(res.get_chapters()))
         print(res.extract_images())
         print(res.write_to_file(res.get_epub_info(), "epub_info.json"))
+        print(res.write_to_file(res.get_chapters_list(), "chapters_list.json"))
