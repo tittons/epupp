@@ -56,6 +56,7 @@ class EpuPP(object):
         Returns:
             self.epub_info (dict): Dictionary with basic information ebout epub:
                 title, language, creator, date, identifier, description.
+            None: if input file is not found.
         Raises:
             IndexError: if pkg:metadata or some of the attributes is not found
         """
@@ -84,8 +85,9 @@ class EpuPP(object):
         
         Returns:
             directory (str): Path to a directory where the images were put
+            None: if input file is not found, or self.__get_book_dir() returns None.
         """
-        if not self.ifile: return
+        if not self.ifile or not self.__get_book_dir() : return
         files = self.__get_files()
         directory = "%s/%s" % (self.__get_book_dir(), "images")
         make_dir(directory)
@@ -111,6 +113,7 @@ class EpuPP(object):
         
         Returns:
             chapters (str): String containing the text of the book formatted as html.
+            None: if input file is not found.
         Raises:
             KeyError: if a file is not found in the epub archive.
         """
@@ -139,6 +142,7 @@ class EpuPP(object):
         
         Returns:
             chapters (list[str]): List of strings containing the text of the book formatted as html.
+            None: if input file is not found.
         Raises:
             KeyError: if a file is not found in the epub archive.
         """
@@ -170,11 +174,12 @@ class EpuPP(object):
                  If not specified uses self.ofile.
         Returns:
             path (str): a path to a file we are writing into.
+            None: if input or output file is not found, or self.__get_book_dir() returns None.
         Raises: 
             FileNotFoundError: if self.__get_book_dir() returns None
         """
         file = optional_filename if optional_filename else self.ofile
-        if not file: return
+        if not self.ifile or not file or not self.__get_book_dir() : return
         
         if ".js" in file:
             res = json.dumps(res, sort_keys=True, indent=4)
