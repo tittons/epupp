@@ -83,7 +83,7 @@ class EpuPP(object):
         Sets the value of self.epub_info['images'] to be equal to the full path to the images.
         
         Returns:
-            directory (str): Path to a directory where the images were put
+            self.epub_info["images"] (str): Path to a directory where the images were (supposedly) put
             None: if input file is not found, or self.__get_book_dir() returns None.
         """
         if not self.ifile or not self.__get_book_dir() : return
