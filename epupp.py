@@ -8,7 +8,7 @@ and writing these entities into files if needed
 
 import json
 import zipfile
-from epuppies import build_chapter, find_file, handle_error, make_dir
+from .epuppies import build_chapter, find_file, handle_error, make_dir
 from lxml import etree, html
 
 class EpuPP(object):
