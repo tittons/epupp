@@ -6,7 +6,6 @@ epub-documents, extracting information from them into 3 entities: info, images, 
 and writing these entities into files if needed
 """ 
 
-import argparse
 import json
 import zipfile
 from epuppies import build_chapter, find_file, handle_error, make_dir
@@ -297,6 +296,7 @@ class EpuPP(object):
             return path
 
 if __name__ == "__main__": 
+    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input', help='Input file name',required=True)
     parser.add_argument('-o','--output',help='Output file name', required=True)
