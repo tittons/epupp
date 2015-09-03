@@ -88,8 +88,8 @@ class EpuPP(object):
         """
         if not self.ifile or not self.__get_book_dir() : return
         files = self.__get_files()
-        directory = "%s/%s" % (self.__get_book_dir(), "images")
-        make_dir(directory)
+        self.epub_info["images"] = "%s/%s" % (self.__get_book_dir(), "images")
+        make_dir(self.epub_info["images"])
         for filename in files:
             if "images" in filename:
                 original = find_file(self.ifile,filename)
@@ -103,8 +103,7 @@ class EpuPP(object):
                                 self.__set_path_to_cover(path)
                 except KeyError as e:
                     handle_error(e)
-        self.epub_info["images"] = directory
-        return directory
+        return self.epub_info["images"]
 
     def get_chapters(self):
         """
@@ -121,7 +120,7 @@ class EpuPP(object):
         chapters = etree.Element("main")
         
         for i,filename in enumerate(files):
-            if "htm" in filename or "xml" in filename:
+            if ".htm" in filename or ".xml" in filename:
                 original = find_file(self.ifile,filename)
                 try:
                     with self.ifile.open(original) as f:
@@ -150,7 +149,7 @@ class EpuPP(object):
         chapters = []
         
         for i,filename in enumerate(files):
-            if "htm" in filename or "xml" in filename:
+            if ".htm" in filename or ".xml" in filename:
                 original = find_file(self.ifile,filename)
                 try:
                     with self.ifile.open(original) as f:

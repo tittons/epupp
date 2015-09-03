@@ -36,19 +36,24 @@ def find_file(archive,filename):
     Tries to find and return a filename from epub.
     
     Args:
-        filename (str): a name of a file we need to check for existence.
+        new_filename (str): a name of a file we need to check for existence.
     Returns:
         None: if the file doesn't exist, else 'filename'.
     """
+    new_filename = filename
     try:
-        archive.read(filename)
+        archive.read(new_filename)
     except:
         try:
-            filename = "OPS/%s" % filename
-            archive.read(filename)
+            new_filename = "OPS/%s" % filename
+            archive.read(new_filename)
         except:
-            return None
-    return filename
+            try:
+                new_filename = "OEBPS/%s" % filename
+                archive.read(new_filename)
+            except:
+                pass
+    return new_filename
     
 
 def build_chapter(file,element="section"):
