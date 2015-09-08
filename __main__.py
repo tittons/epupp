@@ -6,7 +6,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-i','--input',help='Input file name',required=True)
-    parser.add_argument('-o','--output',help='Output file name',required=True)
+    parser.add_argument('-o','--output',help='Output file name')
     args = parser.parse_args()
     res = EpuPP(args.input, args.output)
     print(res.write_to_file(res.get_chapters()))

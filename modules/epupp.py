@@ -22,7 +22,7 @@ class EpuPP(object):
         base_path (str): Base directory to store files into
         epub_info (dict): Dictionary of the book meta information
     """
-    def __init__(self,ifname,ofname,base_path="."):
+    def __init__(self,input_file,output_file="output.html",base_path="."):
         """
         Init method.
         
@@ -39,11 +39,11 @@ class EpuPP(object):
             'dc':'http://purl.org/dc/elements/1.1/',
             'atom':'http://www.w3.org/2005/Atom'
         }
-        self.ofile = ofname
+        self.ofile = output_file
         self.epub_info = {}
         self.base_path = base_path
         try:
-            self.ifile = zipfile.ZipFile(ifname)
+            self.ifile = zipfile.ZipFile(input_file)
         except FileNotFoundError as e:
             handle_error(e)
             self.ifile = ""
