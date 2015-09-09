@@ -20,7 +20,10 @@ class EpuPP(object):
         ifile (str): Name of a file to extract content of the book from
         ofile (str): Name of a file to extract main content of the book (excluding all meta information and images) into
         base_path (str): Base directory to store files into
-        epub_info (dict): Dictionary of the book meta information
+        epub_info (dict): Dictionary of the book meta information, such as
+            title, language, creator, date, identifier, description, 
+            book (name of an output file where chapters were put),
+            book_dir, cover (path to, after extraction), images (path to, after extraction), genres.
     """
     def __init__(self,input_file,output_file="output.html",base_path="."):
         """
@@ -66,14 +69,19 @@ class EpuPP(object):
             try:
                 # grabs the metadata block from the contents metafile
                 p = self.__get_cftree().xpath('/pkg:package/pkg:metadata',namespaces=self.ns)[0]
-
-                # repackages the data
-                for s in ['title','language','creator','date','identifier','description']:
-                    self.epub_info[s] = p.xpath('dc:%s/text()'%(s),namespaces=self.ns)[0]
-                self.epub_info['genres'] = self.__get_genres()
             except IndexError as e:
                 handle_error(e)
-            
+                p = etree.Element("metadata")
+
+            # repackages the data
+            for s in ['title','language','creator','date','identifier','description']:
+                try:
+                    self.epub_info[s] = p.xpath('dc:%s/text()'%(s),namespaces=self.ns)[0]
+                except IndexError as e:
+                    handle_error(e)
+                    self.epub_info[s] = ""
+
+            self.epub_info['genres'] = self.__get_genres()
         return self.epub_info
 
     def extract_images(self):
