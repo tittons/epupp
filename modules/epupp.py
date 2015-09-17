@@ -8,7 +8,7 @@ and writing these entities into files if needed
 
 import json
 import zipfile
-from .epuppies import build_chapter, find_file, handle_error, make_dir
+from .helpers import build_chapter, find_file, handle_error, make_dir
 from lxml import etree, html
 
 class EpuPP(object):
@@ -25,7 +25,7 @@ class EpuPP(object):
             book (name of an output file where chapters were put),
             book_dir, cover (path to, after extraction), images (path to, after extraction), genres.
     """
-    def __init__(self,input_file,output_file="output.html",base_path="."):
+    def __init__(self,input_file,output_file="output.html",base_path="./"):
         """
         Init method.
         
@@ -50,6 +50,12 @@ class EpuPP(object):
         except FileNotFoundError as e:
             handle_error(e)
             self.ifile = ""
+            
+    def __enter__(self):
+        return self
+        
+    def __exit__(self,exc_type, exc_value, traceback):
+        self.ifile.close()
 
     def get_epub_info(self):
         """
@@ -96,7 +102,7 @@ class EpuPP(object):
         """
         if not self.ifile or not self.__get_book_dir() : return
         files = self.__get_files()
-        self.epub_info["images"] = "%s/%s" % (self.__get_book_dir(), "images")
+        self.epub_info["images"] = "%s/%s/" % (self.__get_book_dir(), "images")
         make_dir(self.epub_info["images"])
         for filename in files:
             if "images" in filename:
@@ -113,60 +119,67 @@ class EpuPP(object):
                     handle_error(e)
         return self.epub_info["images"]
 
-    def get_chapters(self):
+    def get_chapters(self, extract_images=True, images_path=None, as_list=False):
         """
         Extracts content of all files from epub into a single string and returns it.
         
+        Args:
+            extract_images (bool): If it should extract images from epub. Defaults to True.
+            images_path (str): A path where all images src's should lead to. 
+                If not set, uses self.epub_info["images"], which should be set by self.extract_images() if extract_images = False.
+                If self.epub_info["images"] is not set, uses "images/".
+            as_list (bool): Return chapters as a list or as an HTML-string. Defaults to False.
         Returns:
-            chapters (str): String containing the text of the book formatted as html.
+            chapters (str|list): String or list of strings containing the text of the book formatted as html.
             None: if input file is not found.
         Raises:
             KeyError: if a file is not found in the epub archive.
         """
         if not self.ifile: return
+            
+        #set paths to images in chapters' markup
+        epub_images = self.get_epub_info().get("images")
+        if images_path:
+            images_path =  images_path
+        else:
+            if epub_images:
+                images_path = epub_images
+            else:
+                images_path = "images/"
+                
+        #extract images
+        if extract_images:
+            self.extract_images()
+
         files = self.__get_files()
-        chapters = etree.Element("main")
         
-        for i,filename in enumerate(files):
-            if ".htm" in filename or ".xml" in filename:
-                original = find_file(self.ifile,filename)
-                try:
-                    with self.ifile.open(original) as f:
-                        chapter = build_chapter(f)
-                        chapter.attrib["data-cid"]=str(i)
-                        chapters.append(chapter)
-                        print("%s."%i,end="")
-                except KeyError as e:
-                    handle_error(e)
-        print()
-        chapters = html.tostring(chapters,encoding='unicode')
-        return chapters
-        
-    def get_chapters_list(self):
-        """
-        Extracts content of all files from epub into a list of strings (a string for a file) and returns it.
-        
-        Returns:
-            chapters (list[str]): List of strings containing the text of the book formatted as html.
-            None: if input file is not found.
-        Raises:
-            KeyError: if a file is not found in the epub archive.
-        """
-        if not self.ifile: return
-        files = self.__get_files()
-        chapters = []
-        
-        for i,filename in enumerate(files):
-            if ".htm" in filename or ".xml" in filename:
-                original = find_file(self.ifile,filename)
-                try:
-                    with self.ifile.open(original) as f:
-                        chapter = build_chapter(f)
-                        chapter.attrib["data-cid"]=str(i)
-                        chapters.append(html.tostring(chapter,encoding='unicode'))
-                        print("%s."%i,end="")
-                except KeyError as e:
-                    handle_error(e)
+        if as_list:
+            chapters = []
+            for i,filename in enumerate(files):
+                if ".htm" in filename or ".xml" in filename:
+                    original = find_file(self.ifile,filename)
+                    try:
+                        with self.ifile.open(original) as f:
+                            chapter = build_chapter(f)
+                            chapter.attrib["id"]=filename
+                            chapters.append(html.tostring(chapter,encoding='unicode'))
+                            print("%s."%i,end="")
+                    except KeyError as e:
+                        handle_error(e)
+        else:
+            chapters = etree.Element("div")
+            for i,filename in enumerate(files):
+                if ".htm" in filename or ".xml" in filename:
+                    original = find_file(self.ifile,filename)
+                    try:
+                        with self.ifile.open(original) as f:
+                            chapter = build_chapter(f,images_path=images_path)
+                            chapter.attrib["id"]=filename
+                            chapters.append(chapter)
+                            print("%s."%i,end="")
+                    except KeyError as e:
+                        handle_error(e)
+            chapters = html.tostring(chapters,encoding='unicode')
         print()
         return chapters
 
@@ -237,7 +250,7 @@ class EpuPP(object):
         if not 'book_dir' in self.epub_info:
             try:
                 info = self.get_epub_info()
-                directory = "%s/%s/%s" % (self.base_path, info['title'], info['identifier'])
+                directory = "%s/%s/%s" % (self.base_path.rstrip("/"), info['title'], info['identifier'])
                 make_dir(directory)
                 self.epub_info['book_dir'] = directory
             except KeyError as e:
@@ -286,7 +299,7 @@ class EpuPP(object):
             except KeyError as e:
                 handle_error(e)
         return genres
-
+    
     def __set_path_to_cover(self,path):
         """
         Puts a path to the cover of epub into self.epub_info.

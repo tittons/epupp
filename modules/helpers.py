@@ -56,7 +56,7 @@ def find_file(archive,filename):
     return new_filename
     
 
-def build_chapter(file,element="section"):
+def build_chapter(file,element="section",images_path=""):
     """
     Parses html or xml documents in epub and extracts data from them into a specified element.
     
@@ -89,10 +89,16 @@ def build_chapter(file,element="section"):
         def rewrite_links(link):
             match = re.compile(r'\S+(#\S+)').match(link)
             return match.group(1) if match else link
+            
+        #fixes paths to images
+        def rewrite_images(src):
+            match = re.compile(r'^images/(.+)$').search(src)
+            return images_path+match.group(1) if match else src
 
         #appends all paragraphs from the file to the new root
         for p in ps:
             p.rewrite_links(rewrite_links)
+            p.rewrite_links(rewrite_images)
             root.append(p)
             
     except (AttributeError, TypeError) as e:
