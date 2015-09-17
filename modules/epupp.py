@@ -24,8 +24,10 @@ class EpuPP(object):
             title, language, creator, date, identifier, description, 
             book (name of an output file where chapters were put),
             book_dir, cover (path to, after extraction), images (path to, after extraction), genres.
+        remove_original (bool): If it should remove the original file on __exit__().
+        original: Path to the original file.
     """
-    def __init__(self,input_file,output_file="output.html",base_path="./"):
+    def __init__(self,input_file,output_file="output.html",base_path="./", remove_original=False):
         """
         Init method.
         
@@ -40,22 +42,32 @@ class EpuPP(object):
             'n':'urn:oasis:names:tc:opendocument:xmlns:container',
             'pkg':'http://www.idpf.org/2007/opf',
             'dc':'http://purl.org/dc/elements/1.1/',
-            'atom':'http://www.w3.org/2005/Atom'
+            'atom':'http://www.w3.org/2005/Atom',
+            'ncx':'http://www.daisy.org/z3986/2005/ncx/'
         }
         self.ofile = output_file
         self.epub_info = {}
         self.base_path = base_path
         try:
             self.ifile = zipfile.ZipFile(input_file)
+            self.original = input_file
         except FileNotFoundError as e:
             handle_error(e)
             self.ifile = ""
+            self.original = ""
+        self.remove_original = remove_original
             
     def __enter__(self):
         return self
         
     def __exit__(self,exc_type, exc_value, traceback):
-        self.ifile.close()
+        try:
+            self.ifile.close()
+            if self.remove_original:
+                import os
+                os.remove(self.original)
+        except:
+            pass
 
     def get_epub_info(self):
         """
@@ -88,6 +100,7 @@ class EpuPP(object):
                     self.epub_info[s] = ""
 
             self.epub_info['genres'] = self.__get_genres()
+            self.epub_info['table_of_contents'] = self.__get_table_of_contents()
         return self.epub_info
 
     def extract_images(self):
@@ -288,17 +301,55 @@ class EpuPP(object):
             KeyError: if metadata.xml is not found
         """
         genres = []
-        if not 'genres' in self.epub_info:
-            try:
-                info = self.get_epub_info()
-                genres = etree.fromstring(
-                    self.ifile.read('META-INF/metadata.xml')
-                ).xpath(
-                    'atom:category/@label',namespaces=self.ns
-                )
-            except KeyError as e:
-                handle_error(e)
+        if 'genres' in self.epub_info: return self.epub_info['genres']
+        try:
+            genres = etree.fromstring(
+                self.ifile.read('META-INF/metadata.xml')
+            ).xpath(
+                'atom:category/@label',namespaces=self.ns
+            )
+        except KeyError as e:
+            handle_error(e)
         return genres
+            
+    def __get_table_of_contents(self):
+        """
+        Finds a navigational file.
+    
+        Returns:
+            toc (dict): A Dictionary with a table of contents of a file. 
+                Dict keys: 'title' (str), 'author' (str), 'navpoints' (list).
+                'navpoints' contains Dictionaries with keys: 'raw_id' (str), 'text' (str), 'done_id' (str), for each navPoint.
+        """
+        if 'table_of_contents' in self.epub_info: return self.epub_info['table_of_contents']
+        toc = {
+            'title':None,
+            'author':None,
+            'navpoints':[]
+        }
+        for filename in self.ifile.namelist():
+            if ".ncx" in filename:
+                try:
+                    tree = etree.fromstring(
+                        self.ifile.read(filename)
+                    )
+                    toc['title'] = tree.xpath('ncx:docTitle/ncx:text/text()',namespaces=self.ns)[0]
+                    toc['author'] = tree.xpath('ncx:docAuthor/ncx:text/text()',namespaces=self.ns)[0]
+                    navpoints = tree.xpath('ncx:navMap/ncx:navPoint',namespaces=self.ns)
+                    for np in navpoints:
+                        try:
+                            point = {
+                                'raw_id': np.xpath('@id',namespaces=self.ns)[0],
+                                'text': np.xpath('ncx:navLabel/ncx:text/text()',namespaces=self.ns)[0],
+                                'done_id': np.xpath('ncx:content/@src',namespaces=self.ns)[0],
+                            }
+                        except:
+                            pass
+                        else:
+                            toc['navpoints'].append(point)
+                except (KeyError,IndexError) as e:
+                    handle_error(e)
+        return toc
     
     def __set_path_to_cover(self,path):
         """
