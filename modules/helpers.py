@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
 """
-epuppies contains different utilities for the main module
+helpers.py contains various utilities used by the main module
 """
 
 import errno

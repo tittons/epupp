@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
 """
-Epub Parser for Python or simply 'epupp' is a module containg a single class EpuPP, which provides tools for parsing
+Epub Parser for Python or simply 'epupp' is a module containg class EpuPP, which provides tools for parsing
 epub-documents, extracting information from them into 3 entities: info, images, chapters, 
 and writing these entities into files if needed
 """ 
