@@ -182,7 +182,7 @@ class EpuPP(object):
                         with self.ifile.open(original) as f:
                             chapter = build_chapter(f, images_path=images_path, cleaner=cleaner)
                             chapter.attrib["id"]=filename
-                            chapters.append(html.tostring(chapter,encoding='unicode'))
+                            chapters.append(html.tostring(chapter).decode('utf-8'))
                             print("%s."%i,end="")
                     except KeyError as e:
                         handle_error(e)
@@ -199,7 +199,7 @@ class EpuPP(object):
                             print("%s."%i,end="")
                     except KeyError as e:
                         handle_error(e)
-            chapters = html.tostring(chapters,encoding='unicode')
+            chapters = html.tostring(chapters).decode('utf-8')
         print()
         return chapters
 
