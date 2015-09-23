@@ -56,13 +56,15 @@ def find_file(archive,filename):
     return new_filename
     
 
-def build_chapter(file,element="section",images_path=""):
+def build_chapter(file, element="section", images_path="", cleaner=None):
     """
     Parses html or xml documents in epub and extracts data from them into a specified element.
     
     Args:
         file (ZipExtFile): a file to read the text from.
         element (Optional[str]): optional name of a tag to write the parsed text into. Defaults to 'section'.
+        images_path (str): a base path where the img src's are supposed to lead to.
+        cleaner (lxml.html.clean.Cleaner): an instance of Cleaner to clean html.
     Returns:
         root (lxml.etree.Element): Root element containing text of the book formatted as html.
     Raises:
@@ -77,7 +79,7 @@ def build_chapter(file,element="section",images_path=""):
             b''.join(file.readlines())
         ).body
         
-        #enumerates parapgraphs
+        #enumerates paragraphs
         ps = body.cssselect("p")
         for i,p in enumerate(ps):
             p.attrib["data-pid"]=str(i)
@@ -99,6 +101,8 @@ def build_chapter(file,element="section",images_path=""):
         for p in ps:
             p.rewrite_links(rewrite_links)
             p.rewrite_links(rewrite_images)
+            if type(cleaner) is html.clean.Cleaner: 
+                cleaner(p)
             root.append(p)
             
     except (AttributeError, TypeError) as e:

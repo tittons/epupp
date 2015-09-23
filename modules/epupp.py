@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
 """
-Epub Parser for Python or simply 'epupp' is a module containg class EpuPP, which provides tools for parsing
+Epub Parser for Python or simply 'epupp' is a module containg class EpuPP (with helpers module), which provides tools for parsing
 epub-documents, extracting information from them into 3 entities: info, images, chapters, 
 and writing these entities into files if needed
 """ 
@@ -10,6 +10,7 @@ import json
 import zipfile
 from .helpers import build_chapter, find_file, handle_error, make_dir
 from lxml import etree, html
+from lxml.html.clean import Cleaner
 
 class EpuPP(object):
     """
@@ -132,7 +133,7 @@ class EpuPP(object):
                     handle_error(e)
         return self.epub_info["images"]
 
-    def get_chapters(self, extract_images=True, images_path=None, as_list=False):
+    def get_chapters(self, extract_images=True, images_path=None, as_list=False, clean=True, cleaner_params={}):
         """
         Extracts content of all files from epub into a single string and returns it.
         
@@ -142,6 +143,9 @@ class EpuPP(object):
                 If not set, uses self.epub_info["images"], which should be set by self.extract_images() if extract_images = False.
                 If self.epub_info["images"] is not set, uses "images/".
             as_list (bool): Return chapters as a list or as an HTML-string. Defaults to False.
+            clean (bool): If chapters should be cleaned off of malicious HTML.
+            cleaner_params (dict): Dictionary of cleaner params, 
+                a full list of which is available in the documentation to lxml.html.clean.Cleaner class.
         Returns:
             chapters (str|list): String or list of strings containing the text of the book formatted as html.
             None: if input file is not found.
@@ -166,6 +170,9 @@ class EpuPP(object):
 
         files = self.__get_files()
         
+        #create a cleaner
+        cleaner = Cleaner(**cleaner_params) if clean else None
+        
         if as_list:
             chapters = []
             for i,filename in enumerate(files):
@@ -173,7 +180,7 @@ class EpuPP(object):
                     original = find_file(self.ifile,filename)
                     try:
                         with self.ifile.open(original) as f:
-                            chapter = build_chapter(f)
+                            chapter = build_chapter(f, images_path=images_path, cleaner=cleaner)
                             chapter.attrib["id"]=filename
                             chapters.append(html.tostring(chapter,encoding='unicode'))
                             print("%s."%i,end="")
@@ -186,7 +193,7 @@ class EpuPP(object):
                     original = find_file(self.ifile,filename)
                     try:
                         with self.ifile.open(original) as f:
-                            chapter = build_chapter(f,images_path=images_path)
+                            chapter = build_chapter(f, images_path=images_path, cleaner=cleaner)
                             chapter.attrib["id"]=filename
                             chapters.append(chapter)
                             print("%s."%i,end="")
