@@ -175,7 +175,7 @@ class EpuPP(object):
         
         if as_list:
             chapters = []
-            for i,filename in enumerate(files):
+            for filename in files:
                 if ".htm" in filename or ".xml" in filename:
                     original = find_file(self.ifile,filename)
                     try:
@@ -183,12 +183,11 @@ class EpuPP(object):
                             chapter = build_chapter(f, images_path=images_path, cleaner=cleaner)
                             chapter.attrib["id"]=filename
                             chapters.append(html.tostring(chapter).decode('utf-8'))
-                            print("%s."%i,end="")
                     except KeyError as e:
                         handle_error(e)
         else:
             chapters = etree.Element("div")
-            for i,filename in enumerate(files):
+            for filename in files:
                 if ".htm" in filename or ".xml" in filename:
                     original = find_file(self.ifile,filename)
                     try:
@@ -196,11 +195,9 @@ class EpuPP(object):
                             chapter = build_chapter(f, images_path=images_path, cleaner=cleaner)
                             chapter.attrib["id"]=filename
                             chapters.append(chapter)
-                            print("%s."%i,end="")
                     except KeyError as e:
                         handle_error(e)
             chapters = html.tostring(chapters).decode('utf-8')
-        print()
         return chapters
 
     def write_to_file(self,res, optional_filename=""):
